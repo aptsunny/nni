@@ -1,5 +1,7 @@
 {
-    "base_lr":{"_type": "loguniform", "_value": [0.01, 0.02]}
+    "lr":{"_type": "loguniform", "_value": [0.001, 0.1]},
+    "optimizer":{"_type":"choice", "_value":["SGD", "Adadelta", "Adagrad", "Adam", "Adamax"]},
+    "scheduler":{"_type":"choice", "_value":["CosineAnnealingLR", "StepLR", "LambdaLR"]}
 }
 
 

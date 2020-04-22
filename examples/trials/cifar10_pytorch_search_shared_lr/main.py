@@ -96,12 +96,13 @@ def fast_4_lr_parameters(model, lr_group, arch_search=None):
     groups = [dict(params=choice[x], lr=lr_group[x]) for x in range(len(choice))]
     return groups
 
-def prepare(args):
+def prepare(args, epoch):
     global trainloader
     global testloader
     global net
     global criterion
     global optimizer
+    global scheduler
 
     # Data
     print('==> Preparing data..')
@@ -162,16 +163,29 @@ def prepare(args):
     # part1
     # "lr":{"_type":"choice", "_value":[0.1, 0.01, 0.001, 0.0001]},
 
-    # if args['optimizer'] == 'SGD':
-    #     optimizer = optim.SGD(net.parameters(), lr=args['lr'], momentum=0.9, weight_decay=5e-4)
-    # if args['optimizer'] == 'Adadelta':
-    #     optimizer = optim.Adadelta(net.parameters(), lr=args['lr'])
-    # if args['optimizer'] == 'Adagrad':
-    #     optimizer = optim.Adagrad(net.parameters(), lr=args['lr'])
-    # if args['optimizer'] == 'Adam':
-    #     optimizer = optim.Adam(net.parameters(), lr=args['lr'])
-    # if args['optimizer'] == 'Adamax':
-    #     optimizer = optim.Adam(net.parameters(), lr=args['lr'])
+    if args['optimizer'] == 'SGD':
+        optimizer = optim.SGD(net.parameters(), lr=args['lr'], momentum=0.9, weight_decay=5e-4)
+    if args['optimizer'] == 'Adadelta':
+        optimizer = optim.Adadelta(net.parameters(), lr=args['lr'])
+    if args['optimizer'] == 'Adagrad':
+        optimizer = optim.Adagrad(net.parameters(), lr=args['lr'])
+    if args['optimizer'] == 'Adam':
+        optimizer = optim.Adam(net.parameters(), lr=args['lr'])
+    if args['optimizer'] == 'Adamax':
+        optimizer = optim.Adam(net.parameters(), lr=args['lr'])
+
+
+    if args['scheduler'] == 'CosineAnnealingLR':
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, T_max=20, eta_min=1e-8, last_epoch=-1)
+    if args['scheduler'] == 'StepLR':
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.8)
+    if args['scheduler'] == 'LambdaLR':
+        import numpy as np
+        lambda1 = lambda epoch: np.sin(epoch) / epoch
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lambda1)
+
+    # optimizer = optim.SGD(net.parameters(), lr=args['base_lr'], momentum=0.9, weight_decay=5e-4)
 
     # part2
     # import numpy as np
@@ -287,10 +301,6 @@ def prepare(args):
     #             args['layer3_conv2_3_3'],
     #             args['base_lr']]
 
-
-    optimizer = optim.SGD(net.parameters(), lr=args['base_lr'], momentum=0.9, weight_decay=5e-4)
-
-
 # Training
 def train(epoch, batches=-1):
     global trainloader
@@ -298,12 +308,15 @@ def train(epoch, batches=-1):
     global net
     global criterion
     global optimizer
+    global scheduler
+
 
     print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
     correct = 0
     total = 0
+    scheduler.step()
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
@@ -327,8 +340,10 @@ def train(epoch, batches=-1):
 
         acc = 100.*correct/total
 
-        progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-            % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+        # progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
+        #     % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+        progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | LR = %.4f | Acc: %.3f%% (%d/%d)'
+            % (train_loss/(batch_idx+1), scheduler.get_lr()[0], 100.*correct/total, correct, total))
 
         if batches > 0 and (batch_idx+1) >= batches:
             return
@@ -386,7 +401,7 @@ def test(epoch):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", type=int, default=45) # 20
+    parser.add_argument("--epochs", type=int, default=100) # 20
 
     # Maximum mini-batches per epoch, for code testing purpose
     parser.add_argument("--batches", type=int, default=-1)
@@ -395,19 +410,23 @@ if __name__ == '__main__':
     args, _ = parser.parse_known_args()
 
     try:
-        RCV_CONFIG = nni.get_next_parameter()
+        # RCV_CONFIG = nni.get_next_parameter()
         #RCV_CONFIG = {'lr': 0.1, 'optimizer': 'Adam', 'model':'senet18'}
+
+        RCV_CONFIG = {'lr': 0.1, 'optimizer': 'SGD', 'scheduler':'CosineAnnealingLR'}
         _logger.debug(RCV_CONFIG)
 
-        prepare(RCV_CONFIG)
+        prepare(RCV_CONFIG, args.epochs)
         acc = 0.0
         best_acc = 0.0
         for epoch in range(start_epoch, start_epoch+args.epochs):
             train(epoch, args.batches)
             acc, best_acc = test(epoch)
-            nni.report_intermediate_result(acc)
 
-        nni.report_final_result(best_acc)
+            print(acc)
+            # nni.report_intermediate_result(acc)
+
+        # nni.report_final_result(best_acc)
     except Exception as exception:
         _logger.exception(exception)
         raise
