@@ -19,6 +19,13 @@ trial:
   command: python3 main.py
   codeDir: .
   gpuNum: 1
+
 localConfig:
   maxTrialNumPerGpu:  4
+#  gpuIndices: 0,1,2,3,4,5,6,7
+#  useActiveGpu: true
   # 4
+
+
+
+

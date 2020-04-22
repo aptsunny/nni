@@ -149,7 +149,7 @@ def prepare(args):
     # if args['model'] == 'naive_cifar':
     #     net = Network_cifar(num_classes=100)
 
-    net = Network_cifar(num_classes=100)
+    net = Network_cifar(num_classes=100, layer_1=args['layer_1'], layer_3=args['layer_3'])
 
     net = net.to(device)
     if device == 'cuda':
