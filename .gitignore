@@ -1,4 +1,4 @@
-examples/trials/*/models
+# examples/trials/*/models
 examples/trials/*/data
 examples/trials/*/checkpoint
 
