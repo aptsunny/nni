@@ -71,15 +71,12 @@ def fast_4_lr_parameters(model, lr_group, arch_search=None):
             layer1_features.0.conbine.0.weight
             layer1_features.0.conbine.1.weight
             layer1_features.0.conbine.1.bias
-            
             layer1_features.0.conbine.3.weight
             layer1_features.0.conbine.4.weight
             layer1_features.0.conbine.4.bias
-            
             layer3_features.0.conbine.0.weight
             layer3_features.0.conbine.1.weight
             layer3_features.0.conbine.1.bias
-            
             layer3_features.0.conbine.3.weight
             layer3_features.0.conbine.4.weight
             layer3_features.0.conbine.4.bias
@@ -96,119 +93,6 @@ def fast_4_lr_parameters(model, lr_group, arch_search=None):
             choice.append(a)
 
     choice.append(base_conv)
-    groups = [dict(params=choice[x], lr=lr_group[x]) for x in range(len(choice))]
-    return groups
-
-def forfor(a):
-    return [item for sublist in a for item in sublist]
-
-def fast_17_lr_parameters(model, lr_group, arch_search=None):
-    # 0,1,2,3,4,5,6,7,8
-    # (0,0),(0,1),(0,2),(1,0),(1,1),(1,2),(2,0),(2,1),(2,2)->(3,5,7)
-    # (3,3),(3,5),(3,7),(5,3),(5,5),(5,7),(7,3),(7,5),(7,7)
-    # (1+1+2*9 + 1+1+2*9 )*3+1=121
-    base_conv = []
-    rest_name = []
-    for name, param in model.named_parameters():
-        # rest_name.append(name)
-        rest_name.append(param)
-        """
-        if name.find('layer'):
-            # base_conv.append(param)
-            base_conv.append(name)
-            # print("requires_grad: True ", name)
-        else:
-            # rest_name.append(param)
-            rest_name.append(name)
-            # print("requires_grad: False ", name)
-        """
-    # rest_name.sort()
-    conv_level = []
-    if len(rest_name) == 121:
-        for i in range(0, len(rest_name), 3):
-            a = rest_name[i:i + 3]
-            conv_level.append(a)
-    # choice 41,包括17个(1:0/2:1/9:20/10:21/17:40)5个+
-    # 一共12个 每个layer 6个，(3:02,04,06 /4:08,10,12 /5:14,16,18 /6:03,09,15 /7:05,11,17 /8:07,13,19)
-    # (11:22,24,26/ 12:28,30,32 / 13:34,36,38 / 14:23,29,35 /15:25,31,37 /16:27,33,39)
-    layer1_1_3=[]
-    layer1_1_5=[]
-    layer1_1_7=[]
-    layer1_2_3=[]
-    layer1_2_5=[]
-    layer1_2_7=[]
-
-    layer3_1_3=[]
-    layer3_1_5=[]
-    layer3_1_7=[]
-    layer3_2_3 = []
-    layer3_2_5 = []
-    layer3_2_7 = []
-
-    for i in range(0, len(conv_level)):
-        if i in [2,4,6]:
-            layer1_1_3.append(conv_level[i])
-        elif i in [8,10,12]:
-            layer1_1_5.append(conv_level[i])
-        elif i in [14,16,18]:
-            layer1_1_7.append(conv_level[i])
-        elif i in [3,9,15]:
-            layer1_2_3.append(conv_level[i])
-        elif i in [5,11,17]:
-            layer1_2_5.append(conv_level[i])
-        elif i in [7,13,19]:
-            layer1_2_7.append(conv_level[i])
-
-        elif i in [22,24,26]:
-            layer3_1_3.append(conv_level[i])
-        elif i in [28,30,32]:
-            layer3_1_5.append(conv_level[i])
-        elif i in [34,36,38]:
-            layer3_1_7.append(conv_level[i])
-        elif i in [23,29,35]:
-            layer3_2_3.append(conv_level[i])
-        elif i in [25,31,37]:
-            layer3_2_5.append(conv_level[i])
-        elif i in [27,33,39]:
-            layer3_2_7.append(conv_level[i])
-
-    choice = []
-    choice.append(conv_level[0])
-    choice.append(conv_level[1])
-    choice.append(conv_level[20])
-    choice.append(conv_level[21])
-    choice.append(conv_level[40])
-
-
-    # choice.append(layer1_1_3)
-    # choice.append(layer1_1_5)
-    # choice.append(layer1_1_7)
-    # choice.append(layer1_2_3)
-    # choice.append(layer1_2_5)
-    # choice.append(layer1_2_7)
-    #
-    # choice.append(layer3_1_3)
-    # choice.append(layer3_1_5)
-    # choice.append(layer3_1_7)
-    # choice.append(layer3_2_3)
-    # choice.append(layer3_2_5)
-    # choice.append(layer3_2_7)
-
-    choice.append(forfor(layer1_1_3))
-    choice.append(forfor(layer1_1_5))
-    choice.append(forfor(layer1_1_7))
-    choice.append(forfor(layer1_2_3))
-    choice.append(forfor(layer1_2_5))
-    choice.append(forfor(layer1_2_7))
-
-    choice.append(forfor(layer3_1_3))
-    choice.append(forfor(layer3_1_5))
-    choice.append(forfor(layer3_1_7))
-    choice.append(forfor(layer3_2_3))
-    choice.append(forfor(layer3_2_5))
-    choice.append(forfor(layer3_2_7))
-
-    # choice.append(base_conv)
     groups = [dict(params=choice[x], lr=lr_group[x]) for x in range(len(choice))]
     return groups
 
@@ -246,24 +130,24 @@ def prepare(args):
 
     # Model
     print('==> Building model..')
-    # if args['model'] == 'vgg':
-    #     net = VGG('VGG19')
-    # if args['model'] == 'resnet18':
-    #     net = ResNet18()
-    # if args['model'] == 'googlenet':
-    #     net = GoogLeNet()
-    # if args['model'] == 'densenet121':
-    #     net = DenseNet121()
-    # if args['model'] == 'mobilenet':
-    #     net = MobileNet()
-    # if args['model'] == 'dpn92':
-    #     net = DPN92()
-    # if args['model'] == 'shufflenetg2':
-    #     net = ShuffleNetG2()
-    # if args['model'] == 'senet18':
-    #     net = SENet18()
-    # if args['model'] == 'naive_cifar':
-    net = Network_cifar(num_classes=100)
+    if args['model'] == 'vgg':
+        net = VGG('VGG19')
+    if args['model'] == 'resnet18':
+        net = ResNet18()
+    if args['model'] == 'googlenet':
+        net = GoogLeNet()
+    if args['model'] == 'densenet121':
+        net = DenseNet121()
+    if args['model'] == 'mobilenet':
+        net = MobileNet()
+    if args['model'] == 'dpn92':
+        net = DPN92()
+    if args['model'] == 'shufflenetg2':
+        net = ShuffleNetG2()
+    if args['model'] == 'senet18':
+        net = SENet18()
+    if args['model'] == 'naive_cifar':
+        net = Network_cifar(num_classes=100)
 
     net = net.to(device)
     if device == 'cuda':
@@ -387,13 +271,6 @@ def prepare(args):
 
     # part4
 
-    # "layer1_conv1_3_3":{"_type": "loguniform", "_value": [0.01, 0.02]},
-    # "layer1_conv2_3_3":{"_type": "loguniform", "_value": [0.01, 0.02]},
-    # "layer3_conv1_3_3":{"_type": "loguniform", "_value": [0.01, 0.02]},
-    # "layer3_conv2_3_3":{"_type": "loguniform", "_value": [0.01, 0.02]},
-    # "base_lr":{"_type": "loguniform", "_value": [0.01, 0.02]},
-    # "model":{"_type":"choice", "_value":["naive_cifar"]}
-
     # "layer1_conv1_3_3":{"_type":"choice", "_value":[0.1, 0.01, 0.001, 0.0001]},
     # "layer1_conv2_3_3":{"_type":"choice", "_value":[0.1, 0.01, 0.001, 0.0001]},
     # "layer3_conv1_3_3":{"_type":"choice", "_value":[0.1, 0.01, 0.001, 0.0001]},
@@ -406,39 +283,13 @@ def prepare(args):
     # "layer3_conv1_3_3":{"_type": "loguniform", "_value": [0.001, 0.1]},
     # "layer3_conv2_3_3":{"_type": "loguniform", "_value": [0.001, 0.1]},
     # "base_lr":{"_type": "loguniform", "_value": [0.001, 0.1]},
+    lr_group = [args['layer1_conv1_3_3'],
+                args['layer1_conv2_3_3'],
+                args['layer3_conv1_3_3'],
+                args['layer3_conv2_3_3'],
+                args['base_lr']]
 
-    # lr_group = [args['layer1_conv1_3_3'],
-    #             args['layer1_conv2_3_3'],
-    #             args['layer3_conv1_3_3'],
-    #             args['layer3_conv2_3_3'],
-    #             args['base_lr']]
-
-    # optimizer = torch.optim.SGD(fast_4_lr_parameters(net, lr_group),
-    #                             momentum=0.9,
-    #                             weight_decay=5e-4)
-
-    # part5
-    # import numpy as np
-    # lr_group = list(np.random.uniform(0.001, 0.1) for i in range(17))
-    lr_group = [args['lr_01'],
-                args['lr_02'],
-                args['lr_03'],
-                args['lr_04'],
-                args['lr_05'],
-                args['lr_06'],
-                args['lr_07'],
-                args['lr_08'],
-                args['lr_09'],
-                args['lr_10'],
-
-                args['lr_11'],
-                args['lr_12'],
-                args['lr_13'],
-                args['lr_14'],
-                args['lr_15'],
-                args['lr_16'],
-                args['lr_17'],]
-    optimizer = torch.optim.SGD(fast_17_lr_parameters(net, lr_group),
+    optimizer = torch.optim.SGD(fast_4_lr_parameters(net, lr_group),
                                 momentum=0.9,
                                 weight_decay=5e-4)
 
@@ -547,17 +398,7 @@ if __name__ == '__main__':
 
     try:
         RCV_CONFIG = nni.get_next_parameter()
-
         #RCV_CONFIG = {'lr': 0.1, 'optimizer': 'Adam', 'model':'senet18'}
-        # RCV_CONFIG = {
-        #     "layer1_conv1_3_3":0.01,
-        #     "layer1_conv2_3_3":0.01,
-        #     "layer3_conv1_3_3":0.01,
-        #     "layer3_conv2_3_3":0.02,
-        #     "base_lr":0.02,
-        #     "model":"naive_cifar"}
-
-
         _logger.debug(RCV_CONFIG)
 
         prepare(RCV_CONFIG)

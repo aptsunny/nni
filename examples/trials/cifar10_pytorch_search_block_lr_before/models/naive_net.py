@@ -230,7 +230,6 @@ class BasicBlock(nn.Module):
         self.kernel_size = [3, 5, 7]
         self.kernel_padding = [1, 2, 3]
         self.conbine = nn.ModuleList([])
-        #
         result = [int(choice / 3), choice % 3]
         self.conbine= nn.Sequential(
                     self.conv_b(inplanes, planes, kernel_size=self.kernel_size[result[0]], padding=self.kernel_padding[result[0]]),
@@ -283,7 +282,6 @@ class Network_cifar(nn.Module):
         self.bn2 = nn.BatchNorm2d(channels['layer1'])
         self.relu2 = nn.ReLU(inplace=True)
         self.pool2 = nn.MaxPool2d(2)
-
         self.layer1_features = torch.nn.ModuleList() # 9 choices
         for blockIndex in range(9):
             self.layer1_features.append(
@@ -322,15 +320,19 @@ class Network_cifar(nn.Module):
 
     def forward(self, x, architecture):
         x = self.relu1(self.bn1(self.conv1(x)))
-
         x = self.pool2(self.relu2(self.bn2(self.conv2(x))))
         x = self.layer1_features[architecture[0]](x)
-
         x = self.pool3(self.relu3(self.bn3(self.conv3(x))))
-
+        # x = self.conv3(x)
+        # x = self.bn3(x)
+        # x = self.relu3(x)
+        # x = self.pool3(x)
         x = self.pool4(self.relu4(self.bn4(self.conv4(x))))
+        # x = self.conv4(x)
+        # x = self.bn4(x)
+        # x = self.relu4(x)
+        # x = self.pool4(x)
         x = self.layer3_features[architecture[1]](x)
-
         x = self.avgpool(x)
         x = x.view(x.size(0), -1)
         x = self.fc(x) * 0.125 # weight=0.125
