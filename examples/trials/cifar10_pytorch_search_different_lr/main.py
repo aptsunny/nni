@@ -440,10 +440,10 @@ if __name__ == '__main__':
     args, _ = parser.parse_known_args()
 
     try:
-        # RCV_CONFIG = nni.get_next_parameter()
+        RCV_CONFIG = nni.get_next_parameter()
         #RCV_CONFIG = {'lr': 0.1, 'optimizer': 'Adam', 'model':'senet18'}
 
-        RCV_CONFIG = {'lr_01': 0.1, 'lr_02': 0.1, 'lr_03': 0.1, 'lr_04': 0.1, 'lr_05': 0.1, 'lr_06': 0.1, 'lr_07': 0.1, 'lr_08': 0.1, 'lr_09': 0.1, 'optimizer': 'SGD', 'scheduler':'CosineAnnealingLR'}
+        # RCV_CONFIG = {'lr_01': 0.1, 'lr_02': 0.1, 'lr_03': 0.1, 'lr_04': 0.1, 'lr_05': 0.1, 'lr_06': 0.1, 'lr_07': 0.1, 'lr_08': 0.1, 'lr_09': 0.1, 'optimizer': 'SGD', 'scheduler':'CosineAnnealingLR'}
         _logger.debug(RCV_CONFIG)
 
         prepare(RCV_CONFIG, args.epochs)
@@ -454,9 +454,9 @@ if __name__ == '__main__':
             acc, best_acc = test(epoch)
 
             # print(acc)
-            # nni.report_intermediate_result(acc)
+            nni.report_intermediate_result(acc)
 
-        # nni.report_final_result(best_acc)
+        nni.report_final_result(best_acc)
     except Exception as exception:
         _logger.exception(exception)
         raise
