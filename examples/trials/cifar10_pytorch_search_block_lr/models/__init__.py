@@ -10,3 +10,4 @@ from .senet import *
 from .shufflenet import *
 
 from .naive_net import *
+from .network_mobile import *

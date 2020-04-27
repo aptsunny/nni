@@ -1,6 +1,8 @@
 '''Train CIFAR10 with PyTorch.'''
 from __future__ import print_function
 import argparse
+from typing import List, Any
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -16,7 +18,6 @@ import logging
 
 from models import *
 from utils import progress_bar
-
 import nni
 
 _logger = logging.getLogger("cifar10_pytorch_automl")
@@ -29,7 +30,6 @@ optimizer = None
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0.0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
-
 
 def fast_19_lr_parameters(model, lr_group, arch_search=None):
     base_conv = []
@@ -212,12 +212,13 @@ def fast_17_lr_parameters(model, lr_group, arch_search=None):
     groups = [dict(params=choice[x], lr=lr_group[x]) for x in range(len(choice))]
     return groups
 
-def prepare(args):
+def prepare(args, epoch):
     global trainloader
     global testloader
     global net
     global criterion
     global optimizer
+    global scheduler
 
     # Data
     print('==> Preparing data..')
@@ -236,7 +237,7 @@ def prepare(args):
     # trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
     trainset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform_train)
     # trainloader = torch.utils.data.DataLoader(trainset, batch_size=args.batchsize, shuffle=True, num_workers=2)
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=256, shuffle=True, num_workers=2)
+    trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
 
     # testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
     testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=transform_test)
@@ -263,7 +264,22 @@ def prepare(args):
     # if args['model'] == 'senet18':
     #     net = SENet18()
     # if args['model'] == 'naive_cifar':
-    net = Network_cifar(num_classes=100)
+
+    # "layer_1":{"_type":"choice",
+    #     "_value":["3_3", "3_5", "3_7", "5_3", "5_5", "5_7", "7_3", "7_5", "7_7"]},
+    # "layer_3":{"_type":"choice",
+    #     "_value":["3_3", "3_5", "3_7", "5_3", "5_5", "5_7", "7_3", "7_5", "7_7"]}
+
+    # net = Network_cifar(num_classes=100, layer_1=args['layer_1'], layer_3=args['layer_3'])
+    # net = Network_cifar(num_classes=100)
+
+    # make SuperNetwork as naive
+    # net = SuperNetwork(shadow_bn=True, layers=12, classes=100)
+
+    # net = SuperNetwork_2(shadow_bn=True, layers=12, classes=100) pass
+    # net = SuperNetwork_2(shadow_bn=True, layers=3, classes=100)
+    net = SuperNetwork_3(shadow_bn=True, layers=3, classes=100)
+    # print(net)
 
     net = net.to(device)
     if device == 'cuda':
@@ -271,7 +287,8 @@ def prepare(args):
         cudnn.benchmark = True
 
     criterion = nn.CrossEntropyLoss()
-    #optimizer = optim.SGD(net.parameters(), lr=args['lr'], momentum=0.9, weight_decay=5e-4)
+
+    optimizer = optim.SGD(net.parameters(), lr=args['lr'], momentum=0.9, weight_decay=5e-4)
 
     # part1
     # "lr":{"_type":"choice", "_value":[0.1, 0.01, 0.001, 0.0001]},
@@ -420,27 +437,54 @@ def prepare(args):
     # part5
     # import numpy as np
     # lr_group = list(np.random.uniform(0.001, 0.1) for i in range(17))
-    lr_group = [args['lr_01'],
-                args['lr_02'],
-                args['lr_03'],
-                args['lr_04'],
-                args['lr_05'],
-                args['lr_06'],
-                args['lr_07'],
-                args['lr_08'],
-                args['lr_09'],
-                args['lr_10'],
 
-                args['lr_11'],
-                args['lr_12'],
-                args['lr_13'],
-                args['lr_14'],
-                args['lr_15'],
-                args['lr_16'],
-                args['lr_17'],]
-    optimizer = torch.optim.SGD(fast_17_lr_parameters(net, lr_group),
-                                momentum=0.9,
-                                weight_decay=5e-4)
+    # lr_group: List[Any] = [args['lr_01'],
+    #             args['lr_02'],
+    #             args['lr_03'],
+    #             args['lr_04'],
+    #             args['lr_05'],
+    #             args['lr_06'],
+    #             args['lr_07'],
+    #             args['lr_08'],
+    #             args['lr_09'],
+    #             args['lr_10'],
+    #
+    #             args['lr_11'],
+    #             args['lr_12'],
+    #             args['lr_13'],
+    #             args['lr_14'],
+    #             args['lr_15'],
+    #             args['lr_16'],
+    #             args['lr_17'],]
+    # optimizer = torch.optim.SGD(fast_17_lr_parameters(net, lr_group),
+    #                             momentum=0.9,
+    #                             weight_decay=5e-4)
+
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.8)
+
+def random_choice(path_num, m, layers):
+    # choice = {}
+    import random
+    import collections
+    import numpy as np
+    choice = collections.OrderedDict()
+    # choice = {
+    #     0: {'conv_0': [0], 'conv_1': [1, 2], 'conv_2': [0,2], 'rate': 0},
+    #     2: {'conv_0': [0], 'conv_1': [0, 1], 'conv_2': [1,2], 'rate': 0}}
+
+    # for i in range(len(layers)):
+    for i in layers:
+        # expansion rate 固定为1
+        rate = np.random.randint(low=0, high=1, size=1)[0]
+        # conv
+        m_ = np.random.randint(low=1, high=(m+1), size=1)[0]
+        rand_conv = random.sample(range(path_num), m_)
+
+        m_2 = np.random.randint(low=1, high=(m + 1), size=1)[0]
+        rand_conv_2 = random.sample(range(path_num), m_2)
+
+        choice[i] = {'conv_0': [0], 'conv_1': rand_conv, 'conv_2': rand_conv_2,'rate': rate}
+    return choice
 
 # Training
 def train(epoch, batches=-1):
@@ -449,21 +493,33 @@ def train(epoch, batches=-1):
     global net
     global criterion
     global optimizer
+    global scheduler
 
     print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
     correct = 0
     total = 0
+    scheduler.step()
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
 
         # naive
-        import numpy as np
-        architecture = [np.random.randint(1) for i in range(2)] # 4+1=5
+        # import numpy as np
+        # architecture = [np.random.randint(9) for i in range(2)] # 4+1=5
         # architecture = [np.random.randint(9) for i in range(2)] # 19 wrong 应该是12+1=13
+        # outputs = net(inputs, architecture)
 
+        # 其实由于可以multi-path，所以不止81种，但是设置成唯一的single path
+        # architecture = {
+        #     0: {'conv_0': [0], 'conv_1': [1, 2], 'conv_2': [0, 2], 'rate': 0},
+        #     2: {'conv_0': [0], 'conv_1': [0, 1], 'conv_2': [1, 2], 'rate': 0}}
+        architecture = {
+            0: {'conv_0': [0], 'conv_1': [0], 'conv_2': [0], 'rate': 0},
+            2: {'conv_0': [0], 'conv_1': [0], 'conv_2': [0], 'rate': 0}}
+        # 暂时用固定 0,1,2,
+        # architecture = random_choice(path_num=3, m=1, layers=[0,2])
         outputs = net(inputs, architecture)
 
         # outputs = net(inputs)
@@ -484,7 +540,9 @@ def train(epoch, batches=-1):
         if batches > 0 and (batch_idx+1) >= batches:
             return
 
-def test(epoch):
+    return architecture
+
+def test(epoch, architecture):
     global best_acc
     global trainloader
     global testloader
@@ -502,7 +560,7 @@ def test(epoch):
 
             # naive
             import numpy as np
-            architecture = [np.random.randint(1) for i in range(2)]
+            # architecture = [np.random.randint(1) for i in range(2)]
             # architecture = [np.random.randint(9) for i in range(2)]
             outputs = net(inputs, architecture)
 
@@ -557,15 +615,36 @@ if __name__ == '__main__':
         #     "base_lr":0.02,
         #     "model":"naive_cifar"}
 
+        # "lr_01": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_02": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_03": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_04": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_05": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_06": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_07": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_08": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_09": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_10": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_11": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_12": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_13": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_14": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_15": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_16": {"_type": "loguniform", "_value": [0.001, 0.1]},
+        # "lr_17": {"_type": "loguniform", "_value": [0.001, 0.1]},
 
+        # RCV_CONFIG = {'lr_01': 0.1, 'lr_02': 0.1, 'lr_03': 0.1, 'lr_04': 0.1, 'lr_05': 0.1, 'lr_06': 0.1, 'lr_07': 0.1, 'lr_08': 0.1, 'lr_09': 0.1, 'lr_10': 0.1, 'lr_11': 0.1, 'lr_12': 0.1, 'lr_13': 0.1, 'lr_14': 0.1, 'lr_15': 0.1, 'lr_16': 0.1, 'lr_17': 0.1}
+
+        # RCV_CONFIG = {'lr': 0.001}
         _logger.debug(RCV_CONFIG)
 
-        prepare(RCV_CONFIG)
+        prepare(RCV_CONFIG, args.epochs)
         acc = 0.0
         best_acc = 0.0
         for epoch in range(start_epoch, start_epoch+args.epochs):
-            train(epoch, args.batches)
-            acc, best_acc = test(epoch)
+            architecture = train(epoch, args.batches)
+            acc, best_acc = test(epoch, architecture)
+            # print(acc, best_acc)
             nni.report_intermediate_result(acc)
 
         nni.report_final_result(best_acc)
