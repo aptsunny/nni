@@ -1,0 +1,16 @@
+{
+    "lr_01":{"_type":"loguniform", "_value": [0.001, 0.1]},
+    "lr_02":{"_type":"loguniform", "_value": [0.001, 0.1]},
+    "lr_03":{"_type":"loguniform", "_value": [0.001, 0.1]},
+    "lr_04":{"_type":"loguniform", "_value": [0.001, 0.1]},
+    "lr_05":{"_type":"loguniform", "_value": [0.001, 0.1]},
+    "lr_06":{"_type":"loguniform", "_value": [0.001, 0.1]},
+    "lr_07":{"_type":"loguniform", "_value": [0.001, 0.1]},
+    "lr_08":{"_type":"loguniform", "_value": [0.001, 0.1]},
+    "lr_09":{"_type":"loguniform", "_value": [0.001, 0.1]},
+    "optimizer":{"_type":"choice", "_value":["SGD", "Adadelta", "Adagrad", "Adam", "Adamax"]},
+    "scheduler":{"_type":"choice", "_value":["CosineAnnealingLR", "StepLR"]}
+}
+
+
+
