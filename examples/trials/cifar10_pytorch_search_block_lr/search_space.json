@@ -1,5 +1,5 @@
 {
-    "lr": {"_type": "loguniform", "_value": [0.001, 0.1]}
+    "lr": {"_type": "loguniform", "_value": [0.001, 0.01]}
 }
 
 

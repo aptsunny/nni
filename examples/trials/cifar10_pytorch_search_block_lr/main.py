@@ -515,6 +515,7 @@ def train(epoch, batches=-1):
         # architecture = {
         #     0: {'conv_0': [0], 'conv_1': [1, 2], 'conv_2': [0, 2], 'rate': 0},
         #     2: {'conv_0': [0], 'conv_1': [0, 1], 'conv_2': [1, 2], 'rate': 0}}
+
         architecture = {
             0: {'conv_0': [0], 'conv_1': [0], 'conv_2': [0], 'rate': 0},
             2: {'conv_0': [0], 'conv_1': [0], 'conv_2': [0], 'rate': 0}}
@@ -607,6 +608,7 @@ if __name__ == '__main__':
         RCV_CONFIG = nni.get_next_parameter()
 
         #RCV_CONFIG = {'lr': 0.1, 'optimizer': 'Adam', 'model':'senet18'}
+
         # RCV_CONFIG = {
         #     "layer1_conv1_3_3":0.01,
         #     "layer1_conv2_3_3":0.01,
@@ -635,6 +637,7 @@ if __name__ == '__main__':
 
         # RCV_CONFIG = {'lr_01': 0.1, 'lr_02': 0.1, 'lr_03': 0.1, 'lr_04': 0.1, 'lr_05': 0.1, 'lr_06': 0.1, 'lr_07': 0.1, 'lr_08': 0.1, 'lr_09': 0.1, 'lr_10': 0.1, 'lr_11': 0.1, 'lr_12': 0.1, 'lr_13': 0.1, 'lr_14': 0.1, 'lr_15': 0.1, 'lr_16': 0.1, 'lr_17': 0.1}
 
+        # RCV_CONFIG = {'lr': 0.1}
         # RCV_CONFIG = {'lr': 0.001}
         _logger.debug(RCV_CONFIG)
 
