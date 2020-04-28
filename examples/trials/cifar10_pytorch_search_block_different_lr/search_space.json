@@ -1,0 +1,25 @@
+{
+    "lr_01":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_02":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_03":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_04":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_05":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_06":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_07":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_08":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_09":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_10":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+
+    "lr_11":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_12":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_13":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_14":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_15":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_16":{"_type": "loguniform", "_value": [0.0001, 0.01]},
+    "lr_17":{"_type": "loguniform", "_value": [0.0001, 0.01]}
+}
+
+
+
+
+
