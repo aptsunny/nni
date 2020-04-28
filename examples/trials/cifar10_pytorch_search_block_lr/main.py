@@ -516,11 +516,11 @@ def train(epoch, batches=-1):
         #     0: {'conv_0': [0], 'conv_1': [1, 2], 'conv_2': [0, 2], 'rate': 0},
         #     2: {'conv_0': [0], 'conv_1': [0, 1], 'conv_2': [1, 2], 'rate': 0}}
 
-        architecture = {
-            0: {'conv_0': [0], 'conv_1': [0], 'conv_2': [0], 'rate': 0},
-            2: {'conv_0': [0], 'conv_1': [0], 'conv_2': [0], 'rate': 0}}
+        # architecture = {
+        #     0: {'conv_0': [0], 'conv_1': [0], 'conv_2': [0], 'rate': 0},
+        #     2: {'conv_0': [0], 'conv_1': [0], 'conv_2': [0], 'rate': 0}}
         # 暂时用固定 0,1,2,
-        # architecture = random_choice(path_num=3, m=1, layers=[0,2])
+        architecture = random_choice(path_num=3, m=1, layers=[0,2])
         outputs = net(inputs, architecture)
 
         # outputs = net(inputs)
