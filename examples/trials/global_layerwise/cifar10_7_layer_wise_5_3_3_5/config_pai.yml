@@ -1,11 +1,10 @@
 authorName: default
 experimentName: example_pytorch_cifar10
 trialConcurrency: 1
-# 1
-maxExecDuration: 48h
-maxTrialNum: 2000
+maxExecDuration: 100h
+maxTrialNum: 10
 #choice: local, remote, pai
-trainingServicePlatform: local
+trainingServicePlatform: pai
 searchSpacePath: search_space.json
 #choice: true, false
 useAnnotation: false
@@ -20,7 +19,17 @@ trial:
   command: python3 main.py
   codeDir: .
   gpuNum: 1
-
-localConfig:
-  maxTrialNumPerGpu:  1
-  # 4
+  cpuNum: 1
+  memoryMB: 8196
+  #The docker image to run nni job on pai
+  image: msranni/nni:latest
+  nniManagerNFSMountPath: /home/user/mnt
+  containerNFSMountPath: /mnt/data/user
+  paiStoragePlugin: team_wise
+paiConfig:
+  #The username to login pai
+  userName: username
+  #The token to login pai
+  token: token
+  #The host of restful server of pai
+  host: 10.10.10.10
