@@ -30,6 +30,45 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 best_acc = 0.0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
+
+def layer_wise_mobilenet_parameters(model, lr_group, arch_search=None):
+    rest_name = []
+    figure_ = []
+    for name, param in model.named_parameters():
+        rest_name.append(param)
+        figure_.append(name)
+
+    figure_choice=[]
+    choice = []
+    if len(rest_name) == 83:
+        for i in range(0, len(rest_name), 3):
+            a = rest_name[i:i + 3]
+            b = figure_[i:i+3]
+            figure_choice.append(b)
+            choice.append(a)
+    elif len(rest_name) == 62:
+        for i in range(0, len(rest_name), 3):
+            a = rest_name[i:i + 3]
+            b = figure_[i:i+3]
+            figure_choice.append(b)
+            choice.append(a)
+    elif len(rest_name) == 66:
+        for i in range(0, len(rest_name), 2):
+            a = rest_name[i:i + 2]
+            b = figure_[i:i+2]
+            figure_choice.append(b)
+            choice.append(a)
+    elif len(rest_name) == 149:
+        for i in range(0, len(rest_name), 3):
+            a = rest_name[i:i + 3]
+            b = figure_[i:i+3]
+            figure_choice.append(b)
+            choice.append(a)
+
+    groups = [dict(params=choice[x], lr=lr_group[x]) for x in range(len(choice))]
+    return groups
+
+
 def prepare(args):
     global trainloader
     global testloader
@@ -51,34 +90,43 @@ def prepare(args):
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
     ])
 
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
+    trainset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform_train)
     trainloader = torch.utils.data.DataLoader(trainset, batch_size=128, shuffle=True, num_workers=2)
 
-    testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test)
+    testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=transform_test)
     testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=2)
 
-    #classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
     # Model
-    # num_classes=100,
     print('==> Building model..')
-    if args['model'] == 'vgg':
-        net = VGG('VGG19')
-    if args['model'] == 'resnet18':
-        net = ResNet18()
-    if args['model'] == 'googlenet':
-        net = GoogLeNet()
-    if args['model'] == 'densenet121':
-        net = DenseNet121()
-    if args['model'] == 'mobilenet':
-        net = MobileNet()
-    if args['model'] == 'dpn92':
-        net = DPN92()
-    if args['model'] == 'shufflenetg2':
-        net = ShuffleNetG2()
-    if args['model'] == 'senet18':
-        net = SENet18()
 
+    net = MobileNet(num_classes=100)
+
+    """
+    if args['model'] == 'mobilenet':
+        net = MobileNet(num_classes=100) # 83 83-2/3= 27 28
+        # lr_group = [0.01] * 7 + [0.001] * 7 + [0.0001] * 7 + [0.00001] * 7
+    if args['model'] == 'vgg':
+        net = VGG('VGG19') # 66 66/2=33
+        # lr_group = [0.01] * 7 + [0.001] * 7 + [0.0001] * 7 + [0.00001] * 12
+    if args['model'] == 'resnet18':
+        net = ResNet18(num_classes=100) # 62 21
+        # lr_group = [0.01] * 7 + [0.001] * 7 + [0.0001] * 7
+    if args['model'] == 'shufflenetg2':
+        net = ShuffleNetG2(num_classes=100) # 149 147//3+1=49+1=50
+        # lr_group = [0.01] * 12 + [0.001] * 12 + [0.0001] * 12 + [0.00001] * 14
+
+    if args['model'] == 'googlenet':
+        net = GoogLeNet(num_classes=100)
+    if args['model'] == 'densenet121':
+        net = DenseNet121(num_classes=100)
+    if args['model'] == 'dpn92':
+        net = DPN92(num_classes=100)
+    if args['model'] == 'senet18':
+        net = SENet18(num_classes=100)
+    """
+
+    # print(net)
     net = net.to(device)
     if device == 'cuda':
         net = torch.nn.DataParallel(net)
@@ -87,16 +135,31 @@ def prepare(args):
     criterion = nn.CrossEntropyLoss()
     #optimizer = optim.SGD(net.parameters(), lr=args['lr'], momentum=0.9, weight_decay=5e-4)
 
-    if args['optimizer'] == 'SGD':
-        optimizer = optim.SGD(net.parameters(), lr=args['lr'], momentum=0.9, weight_decay=5e-4)
-    if args['optimizer'] == 'Adadelta':
-        optimizer = optim.Adadelta(net.parameters(), lr=args['lr'])
-    if args['optimizer'] == 'Adagrad':
-        optimizer = optim.Adagrad(net.parameters(), lr=args['lr'])
-    if args['optimizer'] == 'Adam':
-        optimizer = optim.Adam(net.parameters(), lr=args['lr'])
-    if args['optimizer'] == 'Adamax':
-        optimizer = optim.Adam(net.parameters(), lr=args['lr'])
+    # lr_group = [args['prep'],
+    #             args['layer1_conv0_3_3'],
+    #             args['layer1_conv1_7_7'],
+    #             args['layer1_conv2_3_3'],
+    #             args['layer2_conv0_3_3'],
+    #             args['layer3_conv0_3_3'],
+    #             # args['layer3_conv1_3_3'],
+    #             args['layer3_conv2_5_5'],
+    #             args['rest']]
+
+    lr_group = [args['lr_01']]*4 + [args['lr_02']]*4 + [args['lr_03']]*4 + [args['lr_04']]*4 + [args['lr_05']]*4 + [args['lr_06']]*4 + [args['lr_07']]*4
+
+    optimizer = torch.optim.SGD(layer_wise_mobilenet_parameters(net, lr_group),
+                                momentum=0.9,
+                                weight_decay=5e-4)
+    # if args['optimizer'] == 'SGD':
+    #     optimizer = optim.SGD(net.parameters(), lr=args['lr'], momentum=0.9, weight_decay=5e-4)
+    # if args['optimizer'] == 'Adadelta':
+    #     optimizer = optim.Adadelta(net.parameters(), lr=args['lr'])
+    # if args['optimizer'] == 'Adagrad':
+    #     optimizer = optim.Adagrad(net.parameters(), lr=args['lr'])
+    # if args['optimizer'] == 'Adam':
+    #     optimizer = optim.Adam(net.parameters(), lr=args['lr'])
+    # if args['optimizer'] == 'Adamax':
+    #     optimizer = optim.Adam(net.parameters(), lr=args['lr'])
 
 
 # Training
@@ -116,6 +179,7 @@ def train(epoch, batches=-1):
         inputs, targets = inputs.to(device), targets.to(device)
         optimizer.zero_grad()
         outputs = net(inputs)
+        # print(outputs.size(), targets.size())
         loss = criterion(outputs, targets)
         loss.backward()
         optimizer.step()
@@ -179,7 +243,7 @@ def test(epoch):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--epochs", type=int, default=200)
+    parser.add_argument("--epochs", type=int, default=100)
 
     # Maximum mini-batches per epoch, for code testing purpose
     parser.add_argument("--batches", type=int, default=-1)
@@ -189,7 +253,12 @@ if __name__ == '__main__':
     try:
         RCV_CONFIG = nni.get_next_parameter()
 
-        # RCV_CONFIG = {'lr': 0.1, 'optimizer': 'Adam', 'model':'senet18'}
+        # RCV_CONFIG = {'lr_01': 0.1, 'lr_02': 0.05, 'lr_03': 0.025, 'lr_04': 0.0125, 'lr_05': 0.00675, 'lr_06': 0.002, 'lr_07': 0.001}
+
+        # RCV_CONFIG = {'lr': 0.001, 'optimizer': 'SGD', 'model':'mobilenet'}
+        # RCV_CONFIG = {'lr': 0.001, 'optimizer': 'SGD', 'model':'vgg'}
+        # RCV_CONFIG = {'lr': 0.001, 'optimizer': 'SGD', 'model':'resnet18'}
+        # RCV_CONFIG = {'lr': 0.001, 'optimizer': 'SGD', 'model':'shufflenetg2'}
         _logger.debug(RCV_CONFIG)
 
         prepare(RCV_CONFIG)
@@ -200,7 +269,6 @@ if __name__ == '__main__':
             acc, best_acc = test(epoch)
             # print(acc, best_acc)
             nni.report_intermediate_result(acc)
-
         nni.report_final_result(best_acc)
     except Exception as exception:
         _logger.exception(exception)

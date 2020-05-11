@@ -16,7 +16,7 @@ class ShuffleBlock(nn.Module):
         '''Channel shuffle: [N,C,H,W] -> [N,g,C/g,H,W] -> [N,C/g,g,H,w] -> [N,C,H,W]'''
         N,C,H,W = x.size()
         g = self.groups
-        return x.view(N,g,C/g,H,W).permute(0,2,1,3,4).contiguous().view(N,C,H,W)
+        return x.view(N,g,C//g,H,W).permute(0,2,1,3,4).contiguous().view(N,C,H,W)
 
 
 class Bottleneck(nn.Module):
@@ -24,7 +24,7 @@ class Bottleneck(nn.Module):
         super(Bottleneck, self).__init__()
         self.stride = stride
 
-        mid_planes = out_planes/4
+        mid_planes = out_planes//4
         g = 1 if in_planes==24 else groups
         self.conv1 = nn.Conv2d(in_planes, mid_planes, kernel_size=1, groups=g, bias=False)
         self.bn1 = nn.BatchNorm2d(mid_planes)
@@ -54,6 +54,7 @@ class ShuffleNet(nn.Module):
         out_planes = cfg['out_planes']
         num_blocks = cfg['num_blocks']
         groups = cfg['groups']
+        num_classes = cfg['num_classes']
 
         self.conv1 = nn.Conv2d(3, 24, kernel_size=1, bias=False)
         self.bn1 = nn.BatchNorm2d(24)
@@ -61,7 +62,7 @@ class ShuffleNet(nn.Module):
         self.layer1 = self._make_layer(out_planes[0], num_blocks[0], groups)
         self.layer2 = self._make_layer(out_planes[1], num_blocks[1], groups)
         self.layer3 = self._make_layer(out_planes[2], num_blocks[2], groups)
-        self.linear = nn.Linear(out_planes[2], 10)
+        self.linear = nn.Linear(out_planes[2], num_classes)
 
     def _make_layer(self, out_planes, num_blocks, groups):
         layers = []
@@ -83,11 +84,12 @@ class ShuffleNet(nn.Module):
         return out
 
 
-def ShuffleNetG2():
+def ShuffleNetG2(num_classes):
     cfg = {
         'out_planes': [200,400,800],
         'num_blocks': [4,8,4],
-        'groups': 2
+        'groups': 2,
+        'num_classes': num_classes
     }
     return ShuffleNet(cfg)
 
