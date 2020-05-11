@@ -1,0 +1,9 @@
+{
+    "model":{"_type":"choice", "_value":["vgg"]},
+    "lr_01":{"_type":"loguniform", "_value": [0.00001, 0.1]},
+    "lr_02":{"_type":"loguniform", "_value": [0.00001, 0.1]},
+    "lr_03":{"_type":"loguniform", "_value": [0.00001, 0.1]},
+    "lr_04":{"_type":"loguniform", "_value": [0.00001, 0.1]},
+    "lr_05":{"_type":"loguniform", "_value": [0.00001, 0.1]},
+    "lr_06":{"_type":"loguniform", "_value": [0.00001, 0.1]}
+}

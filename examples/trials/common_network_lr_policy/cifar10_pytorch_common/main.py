@@ -31,7 +31,7 @@ best_acc = 0.0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
 
-def layer_wise_mobilenet_parameters(model, lr_group, arch_search=None):
+def layer_wise_parameters(model, lr_group, arch_search=None):
     rest_name = []
     figure_ = []
     for name, param in model.named_parameters():
@@ -46,18 +46,21 @@ def layer_wise_mobilenet_parameters(model, lr_group, arch_search=None):
             b = figure_[i:i+3]
             figure_choice.append(b)
             choice.append(a)
-    elif len(rest_name) == 62:
-        for i in range(0, len(rest_name), 3):
-            a = rest_name[i:i + 3]
-            b = figure_[i:i+3]
-            figure_choice.append(b)
-            choice.append(a)
+
     elif len(rest_name) == 66:
         for i in range(0, len(rest_name), 2):
             a = rest_name[i:i + 2]
             b = figure_[i:i+2]
             figure_choice.append(b)
             choice.append(a)
+
+    elif len(rest_name) == 62:
+        for i in range(0, len(rest_name), 3):
+            a = rest_name[i:i + 3]
+            b = figure_[i:i+3]
+            figure_choice.append(b)
+            choice.append(a)
+
     elif len(rest_name) == 149:
         for i in range(0, len(rest_name), 3):
             a = rest_name[i:i + 3]
@@ -100,21 +103,31 @@ def prepare(args):
     # Model
     print('==> Building model..')
 
-    net = MobileNet(num_classes=100)
+    # net = MobileNet(num_classes=100)
 
-    """
+    # "model":{"_type":"choice", "_value":["vgg", "resnet18", "googlenet", "densenet121", "mobilenet", "dpn92", "senet18"],
+
     if args['model'] == 'mobilenet':
-        net = MobileNet(num_classes=100) # 83 83-2/3= 27 28
+        net = MobileNet(num_classes=100) # 83 83-2/3= 27 28   layers: (3)+(13)*6+(2)=15
         # lr_group = [0.01] * 7 + [0.001] * 7 + [0.0001] * 7 + [0.00001] * 7
+        lr_group = [args['lr_01']]*3 + [args['lr_02']]*6 + [args['lr_03']]*6 + [args['lr_04']]*6 + [args['lr_05']]*6 + [args['lr_06']]*6 + [args['lr_07']]*6 + [args['lr_08']]*6 + [args['lr_09']]*6 + [args['lr_10']]*6 + [args['lr_11']]*6 + [args['lr_12']]*6 + [args['lr_13']]*6 + [args['lr_14']]*6 + [args['lr_15']]*2
+
     if args['model'] == 'vgg':
         net = VGG('VGG19') # 66 66/2=33
+        # 16 expect M 16*4=64 + 2 =66 layers:2,2,4,4,4, + 2 = 6
         # lr_group = [0.01] * 7 + [0.001] * 7 + [0.0001] * 7 + [0.00001] * 12
+        lr_group = [args['lr_01']] * 8 + [args['lr_02']] * 8 + [args['lr_03']] * 16 + [args['lr_04']] * 16 + [args['lr_05']] * 16 + [args['lr_06']] * 2
+
     if args['model'] == 'resnet18':
-        net = ResNet18(num_classes=100) # 62 21
+        net = ResNet18(num_classes=100) # 62 21   layers:3+(12,15,15,15)+2
         # lr_group = [0.01] * 7 + [0.001] * 7 + [0.0001] * 7
+        lr_group = [args['lr_01']] * 3 + [args['lr_02']] * 12 + [args['lr_03']] * 15 + [args['lr_04']] * 15 + [args['lr_05']] * 15 + [args['lr_06']] * 2
+
     if args['model'] == 'shufflenetg2':
-        net = ShuffleNetG2(num_classes=100) # 149 147//3+1=49+1=50
+        net = ShuffleNetG2(num_classes=100) # 149 147//3+1=49+1=50 # layers:3+(9+9+9+9)+(9*8)+(36)+2 = 5
         # lr_group = [0.01] * 12 + [0.001] * 12 + [0.0001] * 12 + [0.00001] * 14
+        lr_group = [args['lr_01']] * 3 + [args['lr_02']] * 36 + [args['lr_03']] * 72 + [args['lr_04']] * 36 + [args['lr_05']] * 2
+
 
     if args['model'] == 'googlenet':
         net = GoogLeNet(num_classes=100)
@@ -124,7 +137,7 @@ def prepare(args):
         net = DPN92(num_classes=100)
     if args['model'] == 'senet18':
         net = SENet18(num_classes=100)
-    """
+
 
     # print(net)
     net = net.to(device)
@@ -145,9 +158,7 @@ def prepare(args):
     #             args['layer3_conv2_5_5'],
     #             args['rest']]
 
-    lr_group = [args['lr_01']]*4 + [args['lr_02']]*4 + [args['lr_03']]*4 + [args['lr_04']]*4 + [args['lr_05']]*4 + [args['lr_06']]*4 + [args['lr_07']]*4
-
-    optimizer = torch.optim.SGD(layer_wise_mobilenet_parameters(net, lr_group),
+    optimizer = torch.optim.SGD(layer_wise_parameters(net, lr_group),
                                 momentum=0.9,
                                 weight_decay=5e-4)
     # if args['optimizer'] == 'SGD':
@@ -253,7 +264,7 @@ if __name__ == '__main__':
     try:
         RCV_CONFIG = nni.get_next_parameter()
 
-        # RCV_CONFIG = {'lr_01': 0.1, 'lr_02': 0.05, 'lr_03': 0.025, 'lr_04': 0.0125, 'lr_05': 0.00675, 'lr_06': 0.002, 'lr_07': 0.001}
+        # RCV_CONFIG = {'model': 'shufflenetg2','lr_01': 0.1, 'lr_02': 0.05, 'lr_03': 0.025, 'lr_04': 0.0125, 'lr_05': 0.00675, 'lr_06': 0.002, 'lr_07': 0.001}
 
         # RCV_CONFIG = {'lr': 0.001, 'optimizer': 'SGD', 'model':'mobilenet'}
         # RCV_CONFIG = {'lr': 0.001, 'optimizer': 'SGD', 'model':'vgg'}

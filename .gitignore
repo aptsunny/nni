@@ -3,6 +3,8 @@ examples/trials/*/data
 examples/trials/*/checkpoint
 examples/trials/global_layerwise/*/data
 examples/trials/global_layerwise/*/checkpoint
+examples/trials/common_network_lr_policy/*/data
+examples/trials/common_network_lr_policy/*/checkpoint
 
 # Logs
 logs
