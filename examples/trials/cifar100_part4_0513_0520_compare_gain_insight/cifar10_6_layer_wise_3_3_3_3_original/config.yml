@@ -1,6 +1,6 @@
 authorName: default
 experimentName: example_pytorch_cifar10
-trialConcurrency: 2
+trialConcurrency: 1
 # 1
 maxExecDuration: 96h
 maxTrialNum: 4000
