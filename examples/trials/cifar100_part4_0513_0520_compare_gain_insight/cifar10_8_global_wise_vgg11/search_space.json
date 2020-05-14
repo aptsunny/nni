@@ -1,0 +1,4 @@
+{
+    "model":{"_type":"choice", "_value":["vgg"]},
+    "lr":{"_type":"loguniform", "_value": [0.00001, 0.1]}
+}
