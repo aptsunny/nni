@@ -472,7 +472,7 @@ if __name__ == '__main__':
     try:
         RCV_CONFIG = nni.get_next_parameter()
 
-
+        """
         RCV_CONFIG = {
             "prep": 0.01,
             "layer1_conv0_3_3": 0.01,
@@ -485,7 +485,7 @@ if __name__ == '__main__':
             "tail_conv_1": 0.00001,
             "tail_conv_2": 0.00001,
             "rest":0.02}
-        """"""
+        """
         # RCV_CONFIG = {'lr': 0.1}
         # RCV_CONFIG = {'lr': 0.001}
         _logger.debug(RCV_CONFIG)
@@ -496,10 +496,10 @@ if __name__ == '__main__':
         for epoch in range(start_epoch, start_epoch+args.epochs):
             architecture = train(epoch, args.batches)
             acc, best_acc = test(epoch, architecture)
-            print(acc, best_acc)
-            # nni.report_intermediate_result(acc)
+            # print(acc, best_acc)
+            nni.report_intermediate_result(acc)
 
-        # nni.report_final_result(best_acc)
+        nni.report_final_result(best_acc)
     except Exception as exception:
         _logger.exception(exception)
         raise

@@ -283,7 +283,7 @@ if __name__ == '__main__':
     try:
         RCV_CONFIG = nni.get_next_parameter()
 
-        RCV_CONFIG = {'lr': 0.001, 'model': 'vgg'}
+        # RCV_CONFIG = {'lr': 0.001, 'model': 'vgg'}
         # RCV_CONFIG = {
         #     'model': 'vgg',
         #     'lr_00': 0.002,
@@ -308,10 +308,9 @@ if __name__ == '__main__':
         for epoch in range(start_epoch, start_epoch+args.epochs):
             train(epoch, args.batches)
             acc, best_acc = test(epoch)
-            print(acc, best_acc)
-
-            # nni.report_intermediate_result(acc)
-        # nni.report_final_result(best_acc)
+            # print(acc, best_acc)
+            nni.report_intermediate_result(acc)
+        nni.report_final_result(best_acc)
     except Exception as exception:
         _logger.exception(exception)
         raise
