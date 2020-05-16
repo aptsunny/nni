@@ -1,6 +1,6 @@
 authorName: default
-experimentName: example_pytorch_cifar10
-trialConcurrency: 1
+experimentName: example_pytorch_cifar100
+trialConcurrency: 2
 # 1
 maxExecDuration: 96h
 maxTrialNum: 4000
@@ -23,4 +23,4 @@ trial:
 
 localConfig:
   maxTrialNumPerGpu:  1
-  # 4
+  gpuIndices: 6,7
