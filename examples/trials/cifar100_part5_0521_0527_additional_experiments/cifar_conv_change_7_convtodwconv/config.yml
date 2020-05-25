@@ -23,4 +23,4 @@ trial:
 
 localConfig:
   maxTrialNumPerGpu:  1
-  gpuIndices: 6,7
+  gpuIndices: 4,5
