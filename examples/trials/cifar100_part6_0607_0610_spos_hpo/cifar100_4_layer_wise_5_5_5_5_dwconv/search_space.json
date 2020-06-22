@@ -1,0 +1,11 @@
+{
+    "prep":{"_type": "loguniform", "_value": [0.00001, 0.1]},
+    "layer1_dwconv0_5_5":{"_type": "loguniform", "_value": [0.00001, 0.1]},
+    "layer1_dwconv1_5_5":{"_type": "loguniform", "_value": [0.00001, 0.1]},
+    "layer1_dwconv2_5_5":{"_type": "loguniform", "_value": [0.00001, 0.1]},
+    "layer2_dwconv0_5_5":{"_type": "loguniform", "_value": [0.00001, 0.1]},
+    "layer3_dwconv0_5_5":{"_type": "loguniform", "_value": [0.00001, 0.1]},
+    "layer3_dwconv1_5_5":{"_type": "loguniform", "_value": [0.00001, 0.1]},
+    "layer3_dwconv2_5_5":{"_type": "loguniform", "_value": [0.00001, 0.1]},
+    "rest":{"_type": "loguniform", "_value": [0.00001, 0.1]}
+}
