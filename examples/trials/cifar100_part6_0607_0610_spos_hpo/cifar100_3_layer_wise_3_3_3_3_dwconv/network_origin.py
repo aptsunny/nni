@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from blocks import Shufflenet, Shuffle_Xception #, SeModule, Inverted_Bottleneck
+# from blocks import Shufflenet, Shuffle_Xception #, SeModule, Inverted_Bottleneck
 
 
 # cifar_fast
