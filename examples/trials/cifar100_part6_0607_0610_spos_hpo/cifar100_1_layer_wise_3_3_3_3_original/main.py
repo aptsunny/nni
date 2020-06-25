@@ -358,7 +358,7 @@ def prepare(args, epoch):
 
     optimizer = torch.optim.SGD(fast_hpo_lr_parameters(net, lr_group),
                                 momentum=0.9,
-                                weight_decay=5e-4)
+                                weight_decay=4e-5)# 5e-4
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epoch, eta_min=1e-8, last_epoch=-1)
 
@@ -510,15 +510,15 @@ if __name__ == '__main__':
         RCV_CONFIG = nni.get_next_parameter()
         """
         RCV_CONFIG = {
-            "prep": 0.00087,
-            "layer1_conv0_3_3": 0.06077,
-            "layer1_conv1_3_3": 0.09482,
-            "layer1_conv2_3_3": 0.01448,
-            "layer2_conv0_3_3": 0.05309,
-            "layer3_conv0_3_3": 0.03843,
-            "layer3_conv1_3_3": 0.00401,
-            "layer3_conv2_3_3": 0.09642,
-            "rest": 0.00063}
+            "prep": 0.00003,
+            "layer1_conv0_3_3": 0.02988,
+            "layer1_conv1_3_3": 0.05339,
+            "layer1_conv2_3_3": 0.02026,
+            "layer2_conv0_3_3": 0.09783,
+            "layer3_conv0_3_3": 0.09942,
+            "layer3_conv1_3_3": 0.05544,
+            "layer3_conv2_3_3": 0.00055,
+            "rest": 0.02287}
         """
         _logger.debug(RCV_CONFIG)
         prepare(RCV_CONFIG, args.epochs)

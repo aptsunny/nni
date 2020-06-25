@@ -359,7 +359,7 @@ def prepare(args, epoch):
 
     optimizer = torch.optim.SGD(fast_hpo_lr_parameters(net, lr_group),
                                 momentum=0.9,
-                                weight_decay=5e-4)
+                                weight_decay=4e-5)# 5e-4
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epoch, eta_min=1e-8, last_epoch=-1)
 
