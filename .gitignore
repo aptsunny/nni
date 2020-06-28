@@ -1,3 +1,4 @@
+*.pth.tar
 # examples/trials/*/models
 examples/trials/*/data
 examples/trials/*/checkpoint
