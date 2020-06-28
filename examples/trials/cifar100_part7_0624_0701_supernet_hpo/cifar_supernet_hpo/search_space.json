@@ -11,7 +11,7 @@
 
     "lr_scheduler": {"_type": "choice", "_value": ["Lambda", "Cosine"]},
 
-    "randAugment":{"_type":"choice", "_value":["True", "False"]},
+    "randAugment":{"_type":"choice", "_value":["True", "False"]}
 
 }
 

@@ -287,8 +287,8 @@ def get_cand_flops(cand):
     return get_flops(model)
 '''
 
-# op_flops_dict = pickle.load(open('./data/op_flops_dict.pkl', 'rb'))
-op_flops_dict = pickle.load(open('/home/ubuntu/0_datasets/op_flops_dict.pkl', 'rb'))
+op_flops_dict = pickle.load(open('./op_flops_dict.pkl', 'rb'))
+# op_flops_dict = pickle.load(open('/home/ubuntu/0_datasets/op_flops_dict.pkl', 'rb'))
 
 backbone_info = [  # inp, oup, img_h, img_w, stride
     (3,     16,     224,    224,    2),  # conv1

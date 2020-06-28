@@ -1,8 +1,8 @@
 *.pth.tar
 # examples/trials/*/models
-examples/trials/*/data
+examples/trials/*/data/cifar*
 examples/trials/*/checkpoint
-examples/trials/*/*/data
+examples/trials/*/*/data/cifar*
 examples/trials/*/*/checkpoint
 
 # Logs
