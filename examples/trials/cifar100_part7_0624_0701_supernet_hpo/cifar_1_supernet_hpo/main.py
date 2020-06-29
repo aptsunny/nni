@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import numpy as np
 import time
@@ -17,7 +19,7 @@ from optimizer import get_optim
 
 import nni
 
-_logger = logging.getLogger("cifar100_train_Supernet_hpo")
+_logger = logging.getLogger("cifar100_train_Supernet_hpo_layer-wise")
 
 def train_nni(args, net, device, epoch, batches=-1):
     optimizer = args.optimizer
@@ -219,7 +221,7 @@ def prepare(args, RCV_CONFIG):
     if args.label_smooth > 0:
         criterion = CrossEntropyLabelSmooth(100, args.label_smooth)
     else:
-        print('CrossEntropyLoss')
+        # print('CrossEntropyLoss')
         criterion = nn.CrossEntropyLoss()
 
 
@@ -270,7 +272,7 @@ def get_args():
 
         # parser.add_argument('--learning-rate', type=float, default=0.1, help='init learning rate')  # 0.5
         parser.add_argument('--global-lr', default=False, action='store_true')
-        parser.add_argument('--layerwise-lr', default=True, action='store_true', help='True/False')
+        parser.add_argument('--layerwise-lr', default=False, action='store_true', help='True/False')
 
         parser.add_argument('--optimizer', type=str, default='SGD',
                             help='optimizer:SGD/Adadelta/Adam   Adagrad/->cpu')
@@ -293,6 +295,7 @@ if __name__ == "__main__":
     args = get_args()
 
     try:
+
         RCV_CONFIG = nni.get_next_parameter()
         """
         RCV_CONFIG = {'learning_rate': 0.1,
@@ -313,9 +316,12 @@ if __name__ == "__main__":
             """
             print(
                 'Epoch {}, loss/train acc = {:.2f}/{:.2f}, \
-                val acc/best acc = {:.2f}/{:.2f},'.format(epoch, loss_output, train_acc, acc, best_acc))"""
+                val acc/best acc = {:.2f}/{:.2f},'.format(epoch, loss_output, train_acc, acc, best_acc))
+            """
             nni.report_intermediate_result(acc)
         nni.report_final_result(best_acc)
+
+
     except Exception as exception:
         _logger.exception(exception)
         raise

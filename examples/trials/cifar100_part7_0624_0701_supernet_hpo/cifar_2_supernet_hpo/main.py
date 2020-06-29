@@ -60,8 +60,8 @@ def train_nni(args, net, device, epoch, batches=-1):
                 return get_random_cand()
             outputs = net(inputs, get_uniform_sample_cand())
         else:
-            get_random_cand = lambda: tuple(np.random.randint(1) for i in range(7))
-            # get_random_cand = lambda: tuple(np.random.randint(4) for i in range(7))  # 4
+            # get_random_cand = lambda: tuple(np.random.randint(1) for i in range(7))
+            get_random_cand = lambda: tuple(np.random.randint(4) for i in range(7))  # 4
             architecture = get_random_cand()
             outputs = net(inputs, architecture)
 
@@ -101,14 +101,14 @@ def test_nni(args, net, device, epoch, batches=-1):
             inputs, targets = testloader.next()
             inputs, targets = inputs.to(device), targets.to(device)
 
-            get_random_cand = lambda: tuple(np.random.randint(1) for i in range(7))  # 4
+            # get_random_cand = lambda: tuple(np.random.randint(1) for i in range(7))  # 4
             # outputs = net(inputs, get_random_cand())
 
             # get_random_cand = lambda: tuple(np.random.randint(4) for i in range(7))  # 4
             # architecture = get_random_cand()
 
             # 测试固定网络结构/ 测试某个范围下的网络结构/ 符合某些要求的网络结构
-            # get_random_cand = lambda: tuple(np.random.randint(1)+ int(total/128%4) for i in range(7))
+            get_random_cand = lambda: tuple(np.random.randint(1)+ int(total/128%4) for i in range(7))
             architecture = get_random_cand()
             outputs = net(inputs, architecture)
 
@@ -272,7 +272,7 @@ def get_args():
 
         # parser.add_argument('--learning-rate', type=float, default=0.1, help='init learning rate')  # 0.5
         parser.add_argument('--global-lr', default=False, action='store_true')
-        parser.add_argument('--layerwise-lr', default=True, action='store_true', help='True/False')
+        parser.add_argument('--layerwise-lr', default=False, action='store_true', help='True/False')
 
         parser.add_argument('--optimizer', type=str, default='SGD',
                             help='optimizer:SGD/Adadelta/Adam   Adagrad/->cpu')

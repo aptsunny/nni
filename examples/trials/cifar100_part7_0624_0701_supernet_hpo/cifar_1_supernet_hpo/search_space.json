@@ -1,13 +1,13 @@
 {
     "learning_rate":{"_type": "loguniform", "_value": [0.0001, 0.1]},
 
+    "weight_decay":{"_type": "loguniform", "_value": [0.00004, 0.0005]},
+
     "momentum": {"_type": "choice", "_value": [0.9, 0.85]},
 
     "bn_process": {"_type": "choice", "_value": ["True", "False"]},
 
-    "weight_decay":{"_type": "loguniform", "_value": [0.00004, 0.0005]},
-
-    "label_smooth": {"_type": "uniform", "_value": [0, 0.05, 0.1]},
+    "label_smooth": {"_type": "choice", "_value": [0, 0.05, 0.1]},
 
     "lr_scheduler": {"_type": "choice", "_value": ["Lambda", "Cosine"]},
 
