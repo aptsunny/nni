@@ -1,21 +1,5 @@
-/**
- * Copyright (c) Microsoft Corporation
- * All rights reserved.
- *
- * MIT License
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and
- * to permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED *AS IS*, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING
- * BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
- */
+// Copyright (c) Microsoft Corporation.
+// Licensed under the MIT license.
 
 'use strict';
 
@@ -54,7 +38,7 @@ const yaml = require('js-yaml');
 class PAIK8STrainingService extends PAITrainingService {
     protected paiTrialConfig: NNIPAIK8STrialConfig | undefined;
     private copyExpCodeDirPromise?: Promise<void>;
-    private paiJobConfig: undefined;
+    private paiJobConfig: any;
     private nniVersion: string | undefined;
     constructor() {
         super();
@@ -190,7 +174,7 @@ class PAIK8STrainingService extends PAITrainingService {
 
         let nniJobConfig: any = undefined;
         if (this.paiTrialConfig.paiConfigPath) {
-            nniJobConfig = this.paiJobConfig;
+            nniJobConfig = JSON.parse(JSON.stringify(this.paiJobConfig)); //Trick for deep clone in Typescript
             nniJobConfig.name = jobName;
             // Each taskRole will generate new command in NNI's command format
             // Each command will be formatted to NNI style
@@ -233,9 +217,9 @@ class PAIK8STrainingService extends PAITrainingService {
                     }
                 },
                 extras: {
-                    'com.microsoft.pai.runtimeplugin': [
+                    'storages': [
                         {
-                            plugin: this.paiTrialConfig.paiStoragePlugin
+                            name: this.paiTrialConfig.paiStorageConfigName
                         }
                     ],
                     submitFrom: 'submit-job-v2'
@@ -290,8 +274,6 @@ class PAIK8STrainingService extends PAITrainingService {
             await this.writeParameterFile(trialJobDetail.logPath, trialJobDetail.form.hyperParameters);
         }
 
-        //Copy codeDir files to local working folder
-        await execCopydir(this.paiTrialConfig.codeDir, trialJobDetail.logPath);
         //Generate Job Configuration in yaml format
         const paiJobConfig = this.generateJobConfigInYamlFormat(trialJobDetail);
         this.log.debug(paiJobConfig);
