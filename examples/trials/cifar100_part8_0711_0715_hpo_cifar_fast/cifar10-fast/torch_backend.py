@@ -361,7 +361,9 @@ default_train_steps = (forward(training_mode=True), log_activations(('loss', 'ac
 default_valid_steps = (forward(training_mode=False), log_activations(('loss', 'acc')))
 
 
-def train_epoch(state, timer, train_batches, valid_batches, train_steps=default_train_steps, valid_steps=default_valid_steps, 
+def train_epoch(state, timer, train_batches, valid_batches,
+                train_steps=default_train_steps,
+                valid_steps=default_valid_steps,
                 on_epoch_end=(lambda state: state)):
 
     train_summary, train_time = epoch_stats(on_epoch_end(reduce(train_batches, state, train_steps))), timer()

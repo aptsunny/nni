@@ -67,38 +67,52 @@ def conv_bn(c_in, c_out, bn_weight_init=1.0, **kw):
         'relu': nn.ReLU(True)
     }
 
-def basic_net(channels, weight, pool, **kw):
+def basic_net(channels, weight, pool, concat_pool=False, **kw):
+
+    classifier_pool = {
+        'in': Identity(),
+        'maxpool': nn.MaxPool2d(4),
+        'avgpool': (nn.AvgPool2d(4), ['in']),
+        'concat': (Concat(), ['maxpool', 'avgpool']),
+    } if concat_pool else {'pool': nn.MaxPool2d(4)}
+
     return {
         'input': (None, []),
         'prep': conv_bn(3, channels['prep'], bn_weight_init=1.0, **kw),
         'layer1': dict(conv_bn(channels['prep'], channels['layer1'], **kw), pool=pool),
         'layer2': dict(conv_bn(channels['layer1'], channels['layer2'], **kw), pool=pool),
         'layer3': dict(conv_bn(channels['layer2'], channels['layer3'], **kw), pool=pool),
-        'pool': nn.MaxPool2d(4),
+        'pool': classifier_pool,
         'flatten': Flatten(),
         'linear': nn.Linear(channels['layer3'], 10, bias=False),
         'logits': Mul(weight),
     }
 
-def net(channels=None, weight=0.125, pool=nn.MaxPool2d(2), extra_layers=(), res_layers=('layer1', 'layer3'), **kw):
+def net(channels=None,
+        weight=0.125,
+        pool=nn.MaxPool2d(2),
+        extra_layers=(),
+        concat_pool=False,
+        res_layers=('layer1', 'layer3'), **kw):
+
     channels = channels or {'prep': 64, 'layer1': 128, 'layer2': 256, 'layer3': 512}
     residual = lambda c, **kw: {'in': Identity(), 'res1': conv_bn(c, c, **kw), 'res2': conv_bn(c, c, **kw),
                                 'add': (Add(), ['in', 'res2/relu'])}
-    n = basic_net(channels, weight, pool, **kw)
+    n = basic_net(channels, weight, pool, concat_pool, **kw)
     for layer in res_layers:
         n[layer]['residual'] = residual(channels[layer], **kw)
     for layer in extra_layers:
         n[layer]['extra'] = conv_bn(channels[layer], channels[layer], **kw)
     return n
 
-def train(model, lr_schedule, train_set, test_set, batch_size, num_workers=0):
-# def train(model, lr_schedule, train_batches, test_batches, batch_size, num_workers=0):
-#     num_workers = 0
+def train(model, lr_schedule, train_set, test_set, base_wd, batch_size, num_workers=0):
     train_batches = DataLoader(train_set, batch_size, shuffle=True, set_random_choices=True, num_workers=num_workers)
     test_batches = DataLoader(test_set, batch_size, shuffle=False, num_workers=num_workers)
     lr = lambda step: lr_schedule(step / len(train_batches)) / batch_size
     opts = [SGD(trainable_params(model).values(),
-                {'lr': lr, 'weight_decay': Const(5e-4 * batch_size), 'momentum': Const(0.9)})]
+                {'lr': lr,
+                 'weight_decay': Const(base_wd * batch_size),
+                 'momentum': Const(0.9)})]
     logs, state = Table(), {MODEL: model, LOSS: x_ent_loss, OPTS: opts}
 
     best_acc=0.0
@@ -125,12 +139,43 @@ def train(model, lr_schedule, train_set, test_set, batch_size, num_workers=0):
 if __name__ == '__main__':
     try:
         RCV_CONFIG = nni.get_next_parameter()
+        """
+        "peak_lr":{"_type": "loguniform", "_value": [4e-5, 4e-1]},
+        "base_wd":{"_type": "loguniform", "_value": [5e-5, 5e-3]},
+        "logits_weight":{"_type":"choice", "_value":[0.0625, 0.125, 0.25, 0.5, 1]},
+        "peak_epoch":{"_type":"choice", "_value":[5, 10, 15, 20]},
+        "cutout":{"_type":"choice", "_value":[10, 8, 6, 4]}
+        
+        peak_lr = RCV_CONFIG['peak_lr']
+        base_wd = RCV_CONFIG['base_wd']
+        logits_weight = RCV_CONFIG['logits_weight']
+        peak_epoch = RCV_CONFIG['peak_epoch']
+        cutout_size = RCV_CONFIG['cutout']
+        
+        RCV_CONFIG = {'peak_lr': 0.4,
+                      'base_wd': 5e-4,
+                      'logits_weight': 0.125,
+                      'peak_epoch': 5,
+                      'cutout': 8}
+        """
         _logger.debug(RCV_CONFIG)
+
+        # peak_lr = 0.4
+        base_wd = 5e-4
+        logits_weight = 0.125
+        peak_epoch = 5
+        cutout_size = 8
 
         # search space
         peak_lr = RCV_CONFIG['peak_lr']
-        peak_epoch = RCV_CONFIG['peak_epoch']
-        cutout_size = RCV_CONFIG['cutout']
+        concat_pool = True if RCV_CONFIG['concat_pool']=='concat_pool' else False
+        c_prep = RCV_CONFIG['prep']
+        c_layer1 = RCV_CONFIG['layer1']
+        c_layer2 = RCV_CONFIG['layer2']
+        c_layer3 = RCV_CONFIG['layer3']
+        total_epoch = RCV_CONFIG['total_epoch']
+        channels = {'prep': c_prep, 'layer1': c_layer1, 'layer2': c_layer2, 'layer3': c_layer3}
+        # considerate training time
 
         #
         batch_norm = partial(BatchNorm, weight_init=None, bias_init=None)
@@ -150,58 +195,15 @@ if __name__ == '__main__':
         test_set = list(zip(*preprocess(dataset['valid'], transforms).values()))
         print(f'Finished in {timer():.2} seconds')
 
-
-        lr_schedule = PiecewiseLinear([0, peak_epoch, 24], [0, peak_lr, 0])
+        lr_schedule = PiecewiseLinear([0, peak_epoch, total_epoch], [0, peak_lr, 0])
         batch_size = 512
 
-        n = net()
+        n = net(channels=channels, concat_pool=concat_pool, weight=logits_weight)
         # draw(build_graph(n))
         model = Network(n).to(device).half()
         train_set_x = Transform(train_set, [Crop(32, 32), FlipLR(), Cutout(cutout_size, cutout_size)])
-
-        #
-        summary, best_acc = train(model, lr_schedule, train_set_x, test_set, batch_size=batch_size, num_workers=0)
-        # summary = train(model, train_batches, test_batches, test_set, batch_size=batch_size, num_workers=0)
-
-
+        summary, best_acc = train(model, lr_schedule, train_set_x, test_set, base_wd, batch_size=batch_size, num_workers=0)
         nni.report_final_result(best_acc)
-
-        # 单gpu下 默认设置下
-        # 改完结构之后 3.15*24=75.6
-        # nni状况下 run1/per gpu 1min34=94s
-        # Concurrency4 wait2, run2/per gpu 一共3min18s=198,
-        # Concurrency4 run4,  6min14s=374s
-
-    #
     except Exception as exception:
         _logger.exception(exception)
         raise
-
-
-    """
-    try:
-        # RCV_CONFIG = nni.get_next_parameter()
-        RCV_CONFIG = {'lr': 0.1, 'optimizer': 'Adam', 'model':'senet18'}
-        _logger.debug(RCV_CONFIG)
-
-
-
-        # prepare(RCV_CONFIG)
-        # acc = 0.0
-        # best_acc = 0.0
-        # for epoch in range(start_epoch, start_epoch+args.epochs):
-        #     train(epoch, args.batches)
-        #     acc, best_acc = test(epoch)
-        #     print(acc, best_acc)
-            # nni.report_intermediate_result(acc)
-
-        # nni.report_final_result(best_acc)
-    except Exception as exception:
-        _logger.exception(exception)
-        raise
-    
-    
-        "optimizer":{"_type":"choice", "_value":["SGD", "Adadelta", "Adagrad", "Adam", "Adamax"]},
-
-    "model":{"_type":"choice", "_value":["vgg", "resnet18", "googlenet", "densenet121", "mobilenet", "dpn92", "senet18"]},
-    """
