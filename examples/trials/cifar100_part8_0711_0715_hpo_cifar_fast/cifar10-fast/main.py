@@ -118,17 +118,20 @@ def train(model, lr_schedule, train_set, test_set, batch_size, num_workers=0):
         # logs.append(union({'epoch': epoch + 1,
         #                    'lr': lr_schedule(epoch + 1)},
         #                   train_epoch(state, Timer(torch.cuda.synchronize), train_batches, test_batches)))
-
-
-
     return logs, best_acc
 
 
 
 if __name__ == '__main__':
     RCV_CONFIG = nni.get_next_parameter()
+    # search space
 
 
+    peak_lr = RCV_CONFIG['peak_lr']
+    peak_epoch = RCV_CONFIG['peak_epoch']
+    cutout_size = RCV_CONFIG['cutout']
+
+    #
     batch_norm = partial(BatchNorm, weight_init=None, bias_init=None)
     remove_identity_nodes = lambda net: remove_by_type(net, Identity)
 
@@ -147,13 +150,13 @@ if __name__ == '__main__':
     print(f'Finished in {timer():.2} seconds')
 
 
-    lr_schedule = PiecewiseLinear([0, 5, 24], [0, 0.4, 0])
+    lr_schedule = PiecewiseLinear([0, peak_epoch, 24], [0, peak_lr, 0])
     batch_size = 512
 
     n = net()
     # draw(build_graph(n))
     model = Network(n).to(device).half()
-    train_set_x = Transform(train_set, [Crop(32, 32), FlipLR(), Cutout(8,8)])
+    train_set_x = Transform(train_set, [Crop(32, 32), FlipLR(), Cutout(cutout_size, cutout_size)])
 
     #
     summary, best_acc = train(model, lr_schedule, train_set_x, test_set, batch_size=batch_size, num_workers=0)
@@ -162,7 +165,7 @@ if __name__ == '__main__':
 
     nni.report_final_result(best_acc)
 
-    # 单gpu下
+    # 单gpu下 默认设置下
     # 改完结构之后 3.15*24=75.6
     # nni状况下 run1/per gpu 1min34=94s
     # Concurrency4 wait2, run2/per gpu 一共3min18s=198,
@@ -192,4 +195,8 @@ if __name__ == '__main__':
         _logger.exception(exception)
         raise
     
+    
+        "optimizer":{"_type":"choice", "_value":["SGD", "Adadelta", "Adagrad", "Adam", "Adamax"]},
+
+    "model":{"_type":"choice", "_value":["vgg", "resnet18", "googlenet", "densenet121", "mobilenet", "dpn92", "senet18"]},
     """
