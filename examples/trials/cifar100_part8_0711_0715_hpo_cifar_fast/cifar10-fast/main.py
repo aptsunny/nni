@@ -123,55 +123,60 @@ def train(model, lr_schedule, train_set, test_set, batch_size, num_workers=0):
 
 
 if __name__ == '__main__':
-    RCV_CONFIG = nni.get_next_parameter()
-    # search space
+    try:
+        RCV_CONFIG = nni.get_next_parameter()
+        _logger.debug(RCV_CONFIG)
+
+        # search space
+        peak_lr = RCV_CONFIG['peak_lr']
+        peak_epoch = RCV_CONFIG['peak_epoch']
+        cutout_size = RCV_CONFIG['cutout']
+
+        #
+        batch_norm = partial(BatchNorm, weight_init=None, bias_init=None)
+        remove_identity_nodes = lambda net: remove_by_type(net, Identity)
+
+        DATA_DIR = './data'
+        dataset = cifar10(DATA_DIR)
+        timer = Timer()
+        print('Preprocessing training data')
+        transforms = [
+            partial(normalise, mean=np.array(cifar10_mean, dtype=np.float32), std=np.array(cifar10_std, dtype=np.float32)),
+            partial(transpose, source='NHWC', target='NCHW'),
+        ]
+        train_set = list(zip(*preprocess(dataset['train'], [partial(pad, border=4)] + transforms).values()))
+        print(f'Finished in {timer():.2} seconds')
+        print('Preprocessing test data')
+        test_set = list(zip(*preprocess(dataset['valid'], transforms).values()))
+        print(f'Finished in {timer():.2} seconds')
 
 
-    peak_lr = RCV_CONFIG['peak_lr']
-    peak_epoch = RCV_CONFIG['peak_epoch']
-    cutout_size = RCV_CONFIG['cutout']
+        lr_schedule = PiecewiseLinear([0, peak_epoch, 24], [0, peak_lr, 0])
+        batch_size = 512
+
+        n = net()
+        # draw(build_graph(n))
+        model = Network(n).to(device).half()
+        train_set_x = Transform(train_set, [Crop(32, 32), FlipLR(), Cutout(cutout_size, cutout_size)])
+
+        #
+        summary, best_acc = train(model, lr_schedule, train_set_x, test_set, batch_size=batch_size, num_workers=0)
+        # summary = train(model, train_batches, test_batches, test_set, batch_size=batch_size, num_workers=0)
+
+
+        nni.report_final_result(best_acc)
+
+        # 单gpu下 默认设置下
+        # 改完结构之后 3.15*24=75.6
+        # nni状况下 run1/per gpu 1min34=94s
+        # Concurrency4 wait2, run2/per gpu 一共3min18s=198,
+        # Concurrency4 run4,  6min14s=374s
 
     #
-    batch_norm = partial(BatchNorm, weight_init=None, bias_init=None)
-    remove_identity_nodes = lambda net: remove_by_type(net, Identity)
+    except Exception as exception:
+        _logger.exception(exception)
+        raise
 
-    DATA_DIR = './data'
-    dataset = cifar10(DATA_DIR)
-    timer = Timer()
-    print('Preprocessing training data')
-    transforms = [
-        partial(normalise, mean=np.array(cifar10_mean, dtype=np.float32), std=np.array(cifar10_std, dtype=np.float32)),
-        partial(transpose, source='NHWC', target='NCHW'),
-    ]
-    train_set = list(zip(*preprocess(dataset['train'], [partial(pad, border=4)] + transforms).values()))
-    print(f'Finished in {timer():.2} seconds')
-    print('Preprocessing test data')
-    test_set = list(zip(*preprocess(dataset['valid'], transforms).values()))
-    print(f'Finished in {timer():.2} seconds')
-
-
-    lr_schedule = PiecewiseLinear([0, peak_epoch, 24], [0, peak_lr, 0])
-    batch_size = 512
-
-    n = net()
-    # draw(build_graph(n))
-    model = Network(n).to(device).half()
-    train_set_x = Transform(train_set, [Crop(32, 32), FlipLR(), Cutout(cutout_size, cutout_size)])
-
-    #
-    summary, best_acc = train(model, lr_schedule, train_set_x, test_set, batch_size=batch_size, num_workers=0)
-    # summary = train(model, train_batches, test_batches, test_set, batch_size=batch_size, num_workers=0)
-
-
-    nni.report_final_result(best_acc)
-
-    # 单gpu下 默认设置下
-    # 改完结构之后 3.15*24=75.6
-    # nni状况下 run1/per gpu 1min34=94s
-    # Concurrency4 wait2, run2/per gpu 一共3min18s=198,
-    # Concurrency4 run4,  6min14s=374s
-
-    #
 
     """
     try:
