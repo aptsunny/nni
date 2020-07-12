@@ -1,9 +1,9 @@
 {
     "peak_lr":{"_type": "loguniform", "_value": [4e-5, 4e-1]},
-    "concat_pool":{"_type":"choice", "_value":["concat_pool", "Maxpooling"]},
+
     "prep":{"_type":"choice", "_value":[16, 32, 48, 64]},
     "layer1":{"_type":"choice", "_value":[64, 80, 96, 112, 128]},
     "layer2":{"_type":"choice", "_value":[128, 160, 192, 224, 256]},
     "layer3":{"_type":"choice", "_value":[256, 320, 384, 448, 512]},
-    "total_epoch":{"_type":"choice", "_value":[24, 32, 40]}
+
 }

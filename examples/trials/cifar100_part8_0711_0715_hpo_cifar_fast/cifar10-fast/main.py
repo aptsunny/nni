@@ -67,14 +67,7 @@ def conv_bn(c_in, c_out, bn_weight_init=1.0, **kw):
         'relu': nn.ReLU(True)
     }
 
-def basic_net(channels, weight, pool, concat_pool=False, **kw):
-
-    classifier_pool = {
-        'in': Identity(),
-        'maxpool': nn.MaxPool2d(4),
-        'avgpool': (nn.AvgPool2d(4), ['in']),
-        'concat': (Concat(), ['maxpool', 'avgpool']),
-    } if concat_pool else {'pool': nn.MaxPool2d(4)}
+def basic_net(channels, weight, pool, **kw):
 
     return {
         'input': (None, []),
@@ -82,7 +75,7 @@ def basic_net(channels, weight, pool, concat_pool=False, **kw):
         'layer1': dict(conv_bn(channels['prep'], channels['layer1'], **kw), pool=pool),
         'layer2': dict(conv_bn(channels['layer1'], channels['layer2'], **kw), pool=pool),
         'layer3': dict(conv_bn(channels['layer2'], channels['layer3'], **kw), pool=pool),
-        'pool': classifier_pool,
+        'pool': nn.MaxPool2d(4),
         'flatten': Flatten(),
         'linear': nn.Linear(channels['layer3'], 10, bias=False),
         'logits': Mul(weight),
@@ -145,12 +138,15 @@ if __name__ == '__main__':
         "logits_weight":{"_type":"choice", "_value":[0.0625, 0.125, 0.25, 0.5, 1]},
         "peak_epoch":{"_type":"choice", "_value":[5, 10, 15, 20]},
         "cutout":{"_type":"choice", "_value":[10, 8, 6, 4]}
+        "concat_pool":{"_type":"choice", "_value":["concat_pool", "Maxpooling"]},
+        "total_epoch":{"_type":"choice", "_value":[24, 32, 40]}
         
         peak_lr = RCV_CONFIG['peak_lr']
         base_wd = RCV_CONFIG['base_wd']
         logits_weight = RCV_CONFIG['logits_weight']
         peak_epoch = RCV_CONFIG['peak_epoch']
         cutout_size = RCV_CONFIG['cutout']
+        total_epoch = RCV_CONFIG['total_epoch']
         
         RCV_CONFIG = {'peak_lr': 0.4,
                       'base_wd': 5e-4,
@@ -165,15 +161,15 @@ if __name__ == '__main__':
         logits_weight = 0.125
         peak_epoch = 5
         cutout_size = 8
+        total_epoch = 24
 
         # search space
         peak_lr = RCV_CONFIG['peak_lr']
-        concat_pool = True if RCV_CONFIG['concat_pool']=='concat_pool' else False
         c_prep = RCV_CONFIG['prep']
         c_layer1 = RCV_CONFIG['layer1']
         c_layer2 = RCV_CONFIG['layer2']
         c_layer3 = RCV_CONFIG['layer3']
-        total_epoch = RCV_CONFIG['total_epoch']
+
         channels = {'prep': c_prep, 'layer1': c_layer1, 'layer2': c_layer2, 'layer3': c_layer3}
         # considerate training time
 
@@ -198,7 +194,7 @@ if __name__ == '__main__':
         lr_schedule = PiecewiseLinear([0, peak_epoch, total_epoch], [0, peak_lr, 0])
         batch_size = 512
 
-        n = net(channels=channels, concat_pool=concat_pool, weight=logits_weight)
+        n = net(channels=channels, weight=logits_weight)
         # draw(build_graph(n))
         model = Network(n).to(device).half()
         train_set_x = Transform(train_set, [Crop(32, 32), FlipLR(), Cutout(cutout_size, cutout_size)])
