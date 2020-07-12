@@ -91,7 +91,7 @@ def net(channels=None,
     channels = channels or {'prep': 64, 'layer1': 128, 'layer2': 256, 'layer3': 512}
     residual = lambda c, **kw: {'in': Identity(), 'res1': conv_bn(c, c, **kw), 'res2': conv_bn(c, c, **kw),
                                 'add': (Add(), ['in', 'res2/relu'])}
-    n = basic_net(channels, weight, pool, concat_pool, **kw)
+    n = basic_net(channels, weight, pool, **kw)
     for layer in res_layers:
         n[layer]['residual'] = residual(channels[layer], **kw)
     for layer in extra_layers:
@@ -132,6 +132,8 @@ def train(model, lr_schedule, train_set, test_set, base_wd, batch_size, num_work
 if __name__ == '__main__':
     try:
         RCV_CONFIG = nni.get_next_parameter()
+        _logger.debug(RCV_CONFIG)
+
         """
         "peak_lr":{"_type": "loguniform", "_value": [4e-5, 4e-1]},
         "base_wd":{"_type": "loguniform", "_value": [5e-5, 5e-3]},
@@ -153,8 +155,15 @@ if __name__ == '__main__':
                       'logits_weight': 0.125,
                       'peak_epoch': 5,
                       'cutout': 8}
+                      
+        RCV_CONFIG = {'peak_lr': 0.4,
+              'prep': 64,
+              'layer1': 128,
+              'layer2': 256,
+              'layer3': 512}
+        
         """
-        _logger.debug(RCV_CONFIG)
+
 
         # peak_lr = 0.4
         base_wd = 5e-4
