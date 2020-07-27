@@ -1,6 +1,6 @@
 authorName: unknown
 experimentName: SPOS Search
-trialConcurrency: 4
+trialConcurrency: 1
 maxExecDuration: 7d
 maxTrialNum: 99999
 trainingServicePlatform: local
@@ -11,6 +11,6 @@ tuner:
   classFileName: tuner.py
   className: EvolutionWithFlops
 trial:
-  command: python tester.py --spos-prep
+  command: python tester.py  --imagenet-dir /home/ubuntu/0_datasets/data/ILSVRC2012 --checkpoint /home/ubuntu/2_workspace/nni/examples/nas/spos/checkpoints/epoch_2.pth.tar
   codeDir: .
   gpuNum: 1
